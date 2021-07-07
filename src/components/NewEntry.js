@@ -3,24 +3,33 @@ import { useHistory, useParams } from "react-router-dom"
 import { stateContext } from "../stateReducer"
 
 const NewEntry = (props) => {
-    const {categories, dispatch} = useContext(stateContext)
-
     const [errorMessage, setErrorMessage] = useState()
     const [entry, setEntry] = useState("")
+
     const { category_id } = useParams()
-    const category = categories[category_id]
+    const {categories, dispatch} = useContext(stateContext)
+    const category = categories.find(cat => cat.id == category_id)
     const history = useHistory()
 
     useEffect(() => {
         category ? setErrorMessage(null) : setErrorMessage("Invalid category")
     }, [category_id, category])
 
-    const submit = (event) => {
+    const submit = async (event) => {
         event.preventDefault()
+        const newEntry = { category: category_id, content: entry }
+        const res = await fetch("http://localhost:4000/api/v1/entries", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(newEntry)
+        })
+        const data = await res.json()
+        console.log(data)
         dispatch({
             type:"addEntry",
-            category: category_id, 
-            text: entry 
+            newEntry
         })
         history.push("/")
     }
@@ -31,7 +40,7 @@ const NewEntry = (props) => {
                 <h4 style={{ color: "red" }}>{errorMessage}</h4>
             ) : (
                 <>
-                    <h1>New Entry in Category: {categories[category_id]}</h1>
+                    <h1>New Entry in Category: {category.name}</h1>
                     <form onSubmit={submit}>
                         <div>
                             <textarea onChange={(e) => setEntry(e.target.value)} value={entry} />
